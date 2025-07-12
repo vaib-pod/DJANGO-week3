@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Logged Out - ShopEasy{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="text-center">
+        <i class="fas fa-sign-out-alt fa-4x text-muted mb-4"></i>
+        <h2>You've been logged out</h2>
+        <p class="text-muted mb-4">Thanks for visiting ShopEasy! Come back soon.</p>
+        
+        <div class="d-grid gap-2">
+            <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-sign-in-alt"></i> Login Again
+            </a>
+            <a href="{% url 'product_list' %}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-store"></i> Continue Shopping
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

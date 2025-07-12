@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders - ShopEasy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-center mb-4">
+            <i class="fas fa-clipboard-list"></i> My Orders
+        </h1>
+
+        {% if orders %}
+        <div class="row">
+            {% for order in orders %}
+            <div class="col-12 mb-4">
+                <div class="card order-card">
+                    <div class="order-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="mb-0">Order #{{ order.id }}</h6>
+                                <small class="text-muted">{{ order.created_at|date:"F j, Y g:i A" }}</small>
+                            </div>
+                            <div class="col-md-2">
+                                <span class="order-status {{ order.status|lower }}">
+                                    {% if order.status == 'pending' %}
+                                        <i class="fas fa-clock"></i> Pending
+                                    {% elif order.status == 'completed' %}
+                                        <i class="fas fa-check-circle"></i> Completed
+                                    {% elif order.status == 'cancelled' %}
+                                        <i class="fas fa-times-circle"></i> Cancelled
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-success fw-bold">
+                                    ${{ order.total_amount|floatformat:2 }}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-muted small">
+                                    <i class="fas fa-box"></i> 
+                                    {{ order.orderitem_set.count }} item{{ order.orderitem_set.count|pluralize }}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <a href="{% url 'order_detail' order.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="row">
+                            {% for item in order.orderitem_set.all|slice:":3" %}
+                            <div class="col-md-4 mb-2">
+                                <div class="d-flex align-items-center">
+                                    {% if item.product.image %}
+                                        <img src="{{ item.product.image.url }}" class="rounded me-2" width="40" height="40" alt="{{ item.product.name }}">
+                                    {% else %}
+                                        <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <small class="fw-bold">{{ item.product.name|truncatechars:20 }}</small>
+                                        <small class="text-muted d-block">Qty: {{ item.quantity }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if order.orderitem_set.count > 3 %}
+                            <div class="col-md-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-ellipsis-h"></i> 
+                                    and {{ order.orderitem_set.count|add:"-3" }} more item{{ order.orderitem_set.count|add:"-3"|pluralize }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- No Orders -->
+        <div class="text-center py-5">
+            <i class="fas fa-clipboard-list fa-4x text-muted mb-4"></i>
+            <h3 class="text-muted">No orders yet</h3>
+            <p class="text-muted mb-4">Start shopping to see your orders here!</p>
+            <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-store"></i> Shop Now
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

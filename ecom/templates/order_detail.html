@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Order #{{ order.id }} - ShopEasy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Order #{{ order.id }}</h1>
+            <a href="{% url 'order_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Orders
+            </a>
+        </div>
+
+        <div class="row">
+            <!-- Order Details -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Order Information</h5>
+                            <span class="order-status {{ order.status|lower }}">
+                                {% if order.status == 'pending' %}
+                                    <i class="fas fa-clock"></i> Pending
+                                {% elif order.status == 'completed' %}
+                                    <i class="fas fa-check-circle"></i> Completed
+                                {% elif order.status == 'cancelled' %}
+                                    <i class="fas fa-times-circle"></i> Cancelled
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Order Details</h6>
+                                <p class="mb-1"><strong>Order ID:</strong> #{{ order.id }}</p>
+                                <p class="mb-1"><strong>Date:</strong> {{ order.created_at|date:"F j, Y g:i A" }}</p>
+                                <p class="mb-1"><strong>Status:</strong> {{ order.get_status_display }}</p>
+                                <p class="mb-1"><strong>Total Items:</strong> {{ order_items.count }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Customer Information</h6>
+                                <p class="mb-1"><strong>Name:</strong> {{ order.user.username }}</p>
+                                <p class="mb-1"><strong>Email:</strong> {{ order.user.email|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Items Ordered ({{ order_items.count }})</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for item in order_items %}
+                        <div class="order-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    {% if item.product.image %}
+                                        <img src="{{ item.product.image.url }}" class="img-fluid rounded" alt="{{ item.product.name }}">
+                                    {% else %}
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px;">
+                                            <i class="fas fa-image text-muted fa-2x"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-5">
+                                    <h6 class="mb-1">{{ item.product.name }}</h6>
+                                    <p class="text-muted small mb-0">{{ item.product.description|truncatewords:15 }}</p>
+                                    {% if item.product.tags.all %}
+                                    <div class="mt-1">
+                                        {% for tag in item.product.tags.all %}
+                                            <span class="tag-badge">{{ tag.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <div class="fw-bold">${{ item.price|floatformat:2 }}</div>
+                                        <small class="text-muted">per item</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="text-center">
+                                        <div class="fw-bold">{{ item.quantity }}</div>
+                                        <small class="text-muted">qty</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <div class="fw-bold text-success">
+                                            ${% widthratio item.price 1 item.quantity %}
+                                        </div>
+                                        <small class="text-muted">total</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span>${{ order.total_amount|floatformat:2 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping:</span>
+                            <span class="text-success">Free</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tax:</span>
+                            <span>$0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong class="text-success">${{ order.total_amount|floatformat:2 }}</strong>
+                        </div>
+
+                        {% if order.status == 'pending' %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Order Status:</strong> Your order is being processed. We'll send you an email when it ships.
+                        </div>
+                        {% elif order.status == 'completed' %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Order Completed:</strong> Your order has been delivered successfully.
+                        </div>
+                        {% elif order.status == 'cancelled' %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle"></i>
+                            <strong>Order Cancelled:</strong> This order has been cancelled.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="card mt-3">
+                    <div class="card-body text-center">
+                        <h6>Need Help?</h6>
+                        <p class="text-muted small mb-3">
+                            Have questions about your order? We're here to help!
+                        </p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-envelope"></i> Contact Support
+                            </button>
+                            {% if order.status == 'completed' %}
+                            <button class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-redo"></i> Reorder Items
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.order-item {
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.5rem 0;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+}
+
+.order-item img {
+    max-height: 80px;
+    object-fit: cover;
+}
+</style>
+{% endblock %}

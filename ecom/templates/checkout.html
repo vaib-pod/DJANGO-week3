@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - ShopEasy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-center mb-4">
+            <i class="fas fa-credit-card"></i> Checkout
+        </h1>
+
+        <div class="row">
+            <!-- Order Review -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Review</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for item in cart_items %}
+                        <div class="cart-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    {% if item.product.image %}
+                                        <img src="{{ item.product.image.url }}" class="img-fluid rounded" alt="{{ item.product.name }}">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/80x80?text=No+Image" class="img-fluid rounded" alt="{{ item.product.name }}">
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="cart-item-name">{{ item.product.name }}</h6>
+                                    <p class="text-muted small">{{ item.product.description|truncatewords:10 }}</p>
+                                    <div class="cart-item-price">${{ item.product.price }} × {{ item.quantity }}</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-secondary">Qty: {{ item.quantity }}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="fw-bold text-success">
+                                        ${% widthratio item.product.price 1 item.quantity %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Shipping Information -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Shipping Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="checkout-form">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="first_name" class="form-label">First Name *</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="last_name" class="form-label">Last Name *</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Address *</label>
+                                <input type="text" class="form-control" id="address" name="address" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="city" class="form-label">City *</label>
+                                        <input type="text" class="form-control" id="city" name="city" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="state" class="form-label">State *</label>
+                                        <input type="text" class="form-control" id="state" name="state" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="zip_code" class="form-label">ZIP Code *</label>
+                                        <input type="text" class="form-control" id="zip_code" name="zip_code" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Payment Method</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Demo Mode:</strong> This is a demo checkout. No real payment will be processed.
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="card" value="card" checked>
+                            <label class="form-check-label" for="card">
+                                <i class="fab fa-cc-visa"></i>
+                                <i class="fab fa-cc-mastercard"></i>
+                                <i class="fab fa-cc-amex"></i>
+                                Credit/Debit Card
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
+                            <label class="form-check-label" for="paypal">
+                                <i class="fab fa-paypal"></i>
+                                PayPal
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="cash" value="cash">
+                            <label class="form-check-label" for="cash">
+                                <i class="fas fa-money-bill-wave"></i>
+                                Cash on Delivery
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="card cart-total">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal ({{ cart_items|length }} item{{ cart_items|length|pluralize }}):</span>
+                            <span class="fw-bold">${{ total|floatformat:2 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping:</span>
+                            <span class="text-success">Free</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tax:</span>
+                            <span>$0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong class="cart-total-price">${{ total|floatformat:2 }}</strong>
+                        </div>
+                        
+                        <button type="submit" form="checkout-form" class="btn btn-success btn-lg w-100" id="place-order-btn">
+                            <i class="fas fa-check"></i> Place Order
+                        </button>
+                        
+                        <div class="text-center mt-3">
+                            <a href="{% url 'cart' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Cart
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="card mt-3">
+                    <div class="card-body text-center">
+                        <i class="fas fa-shield-alt text-success fa-2x mb-2"></i>
+                        <p class="small text-muted mb-0">
+                            Your information is secure and encrypted
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Terms and Conditions -->
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label small" for="terms">
+                                I agree to the <a href="#" class="text-primary">Terms and Conditions</a> and <a href="#" class="text-primary">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('checkout-form');
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    
+    form.addEventListener('submit', function(e) {
+        // Show loading state
+        placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        placeOrderBtn.disabled = true;
+        
+        // You can add additional validation here
+        const terms = document.getElementById('terms');
+        if (!terms.checked) {
+            e.preventDefault();
+            alert('Please accept the terms and conditions');
+            placeOrderBtn.innerHTML = '<i class="fas fa-check"></i> Place Order';
+            placeOrderBtn.disabled = false;
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

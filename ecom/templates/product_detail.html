@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - ShopEasy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Product Image -->
+    <div class="col-md-6">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" class="img-fluid product-detail-img" alt="{{ product.name }}">
+        {% else %}
+            <img src="https://via.placeholder.com/500x400?text=No+Image" class="img-fluid product-detail-img" alt="{{ product.name }}">
+        {% endif %}
+    </div>
+    
+    <!-- Product Information -->
+    <div class="col-md-6">
+        <div class="product-detail-info">
+            <h1 class="product-detail-title">{{ product.name }}</h1>
+            
+            <!-- Tags -->
+            {% if product.tags.all %}
+            <div class="product-tags mb-3">
+                {% for tag in product.tags.all %}
+                    <span class="tag-badge">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Price -->
+            <div class="product-detail-price">${{ product.price }}</div>
+            
+            <!-- Stock Status -->
+            <div class="mb-3">
+                {% if product.stock > 10 %}
+                    <span class="badge bg-success fs-6">In Stock ({{ product.stock }} available)</span>
+                {% elif product.stock > 0 %}
+                    <span class="badge bg-warning fs-6">Low Stock ({{ product.stock }} left)</span>
+                {% else %}
+                    <span class="badge bg-danger fs-6">Out of Stock</span>
+                {% endif %}
+            </div>
+            
+            <!-- Description -->
+            <div class="product-detail-description">
+                {{ product.description|linebreaks }}
+            </div>
+            
+            <!-- Add to Cart Form -->
+            {% if product.stock > 0 %}
+            <form method="POST" action="{% url 'add_to_cart' product.id %}" class="mb-3">
+                {% csrf_token %}
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <label for="quantity" class="form-label">Quantity:</label>
+                    </div>
+                    <div class="col-auto">
+                        <input 
+                            type="number" 
+                            id="quantity" 
+                            name="quantity" 
+                            class="form-control quantity-input" 
+                            value="1" 
+                            min="1" 
+                            max="{{ product.stock }}"
+                        >
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> This product is currently out of stock.
+            </div>
+            {% endif %}
+            
+            <!-- AI Tag Suggestion (if enabled) -->
+            {% if user.is_staff %}
+            <div class="mt-4 p-3 bg-light rounded">
+                <h6>Admin Tools:</h6>
+                <button id="suggest-tags-btn" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-magic"></i> Suggest Tags with AI
+                </button>
+                <div id="suggested-tags" class="mt-2" style="display: none;">
+                    <small class="text-muted">AI Suggestions:</small>
+                    <div id="tag-suggestions"></div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Product Meta Information -->
+            <div class="mt-4 pt-3 border-top">
+                <small class="text-muted">
+                    <i class="fas fa-calendar-alt"></i> Added: {{ product.date_added|date:"F j, Y" }}
+                    {% if product.date_updated != product.date_added %}
+                    <br><i class="fas fa-edit"></i> Updated: {{ product.date_updated|date:"F j, Y" }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Back to Products -->
+<div class="row mt-4">
+    <div class="col-12">
+        <a href="{% url 'product_list' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left"></i> Back to Products
+        </a>
+    </div>
+</div>
+
+<!-- Related Products Section (Optional) -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h3>You might also like</h3>
+        <div class="row">
+            {% for related_product in related_products %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                <div class="card product-card">
+                    {% if related_product.image %}
+                        <img src="{{ related_product.image.url }}" class="card-img-top" alt="{{ related_product.name }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/300x200?text=No+Image" class="card-img-top" alt="{{ related_product.name }}">
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h6 class="card-title">{{ related_product.name }}</h6>
+                        <div class="product-price">${{ related_product.price }}</div>
+                        <a href="{% url 'product_detail' related_product.id %}" class="btn btn-primary btn-sm">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// AI Tag Suggestion Feature
+document.addEventListener('DOMContentLoaded', function() {
+    const suggestBtn = document.getElementById('suggest-tags-btn');
+    const suggestedTags = document.getElementById('suggested-tags');
+    const tagSuggestions = document.getElementById('tag-suggestions');
+    
+    if (suggestBtn) {
+        suggestBtn.addEventListener('click', function() {
+            // Show loading state
+            suggestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            suggestBtn.disabled = true;
+            
+            // Make AJAX request to suggest tags
+            fetch(`/products/{{ product.id }}/suggest-tags/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.tags) {
+                    tagSuggestions.innerHTML = '';
+                    data.tags.forEach(tag => {
+                        const tagSpan = document.createElement('span');
+                        tagSpan.className = 'tag-badge me-1';
+                        tagSpan.textContent = tag;
+                        tagSuggestions.appendChild(tagSpan);
+                    });
+                    suggestedTags.style.display = 'block';
+                } else {
+                    alert('Error getting tag suggestions');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error getting tag suggestions');
+            })
+            .finally(() => {
+                // Reset button state
+                suggestBtn.innerHTML = '<i class="fas fa-magic"></i> Suggest Tags with AI';
+                suggestBtn.disabled = false;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
